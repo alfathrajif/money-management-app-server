@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  uuid         String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @default(now())
+  transactions Transaction[]
+  categories   Category[]
+
+  @@map("users")
+}
+
+model Transaction {
+  uuid          String   @id @default(uuid())
+  user          User     @relation(fields: [user_uuid], references: [uuid])
+  user_uuid     String
+  category_uuid String
+  category      Category @relation(fields: [category_uuid], references: [uuid])
+  type          String // "income" | "expense"
+  amount        Float
+  description   String
+  date          DateTime
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Category {
+  uuid         String        @id @default(uuid())
+  user         User          @relation(fields: [user_uuid], references: [uuid])
+  user_uuid    String
+  name         String
+  type         String // "income" | "expense"
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @default(now())
+  transactions Transaction[]
+
+  @@map("categories")
+}
