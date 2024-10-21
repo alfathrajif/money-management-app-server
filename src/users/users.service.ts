@@ -37,8 +37,12 @@ export class UsersService {
   }
 
   getUser(filter: Prisma.UserWhereUniqueInput) {
-    return this.prismaService.user.findUniqueOrThrow({
+    const user = this.prismaService.user.findUnique({
       where: filter,
     });
+
+    if (!user) return null;
+
+    return user;
   }
 }

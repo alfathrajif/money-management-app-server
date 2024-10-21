@@ -15,7 +15,8 @@ export class ErrorFilter implements ExceptionFilter {
 
     if (exception instanceof UnauthorizedException) {
       response.status(exception.getStatus()).json({
-        errors: exception.message,
+        message: 'Unauthorized',
+        error: exception.message,
         timestamp: new Date().toISOString(),
         status_code: exception.getStatus(),
       });

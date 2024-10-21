@@ -6,13 +6,20 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const clientUrl = app.get(ConfigService).getOrThrow('CLIENT_URL');
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT') || 3000;
+
+  const clientUrl = configService.get('CLIENT_URL');
 
   app.useLogger(app.get(Logger));
   app.enableCors({ origin: clientUrl, credentials: true });
 
   app.use(cookieParser());
 
-  await app.listen(app.get(ConfigService).getOrThrow('PORT'));
+  await app.listen(port);
+
+  console.log(`Application is shared on: ${clientUrl}`);
+  console.log(`This application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

@@ -6,33 +6,13 @@ import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { CategoriesModule } from './categories/categories.module';
+import { z } from 'zod';
 
 @Module({
   imports: [
-    LoggerModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const isProduction = configService.get('NODE_ENV') === 'production';
-        return {
-          pinoHttp: {
-            transport: isProduction
-              ? undefined
-              : {
-                  target: 'pino-pretty',
-                  options: {
-                    singleLine: true,
-                  },
-                },
-            level: isProduction ? 'info' : 'debug',
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-    ConfigModule.forRoot(),
+    CommonModule,
     AuthModule,
     UsersModule,
-    CommonModule,
     TransactionsModule,
     CategoriesModule,
   ],

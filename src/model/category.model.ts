@@ -10,3 +10,8 @@ export class Category {
   transactions?: Transaction[];
   total_amount?: number;
 }
+
+export class CreateCategory {
+  name: string;
+  type: 'income' | 'expense';
+}

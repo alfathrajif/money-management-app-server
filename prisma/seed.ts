@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -21,11 +22,14 @@ async function main() {
   await prisma.$transaction([
     prisma.transaction.deleteMany(),
     prisma.category.deleteMany(),
+    prisma.user.deleteMany(),
   ]);
 
-  const user = await prisma.user.findFirst({
-    where: {
+  const user = await prisma.user.create({
+    data: {
+      name: 'John Doe',
       email: 'testing@gmail.com',
+      password: await bcrypt.hash('Password123', 10),
     },
   });
 
@@ -41,7 +45,6 @@ async function main() {
     ),
   );
 
-  // Create transactions
   for (let i = 0; i < 20; i++) {
     const category = faker.helpers.arrayElement(createdCategories);
 
@@ -64,4 +67,11 @@ async function main() {
   console.log('Seeding completed!');
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
