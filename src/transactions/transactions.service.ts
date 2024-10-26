@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { CreateTransaction } from 'src/model/transaction.model';
+import { CreateTransaction, Transaction } from 'src/model/transaction.model';
 
 @Injectable()
 export class TransactionsService {
@@ -18,6 +18,7 @@ export class TransactionsService {
         amount: true,
         description: true,
         date: true,
+        payment_method: true,
       },
       orderBy: {
         created_at: 'desc',
@@ -30,6 +31,7 @@ export class TransactionsService {
       data: {
         user_uuid: userUuid,
         category_uuid: transaction.category_uuid,
+        payment_method_uuid: transaction.payment_method_uuid,
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description,
@@ -49,6 +51,7 @@ export class TransactionsService {
       },
       data: {
         category_uuid: transaction.category_uuid,
+        payment_method_uuid: transaction.payment_method_uuid,
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description,
@@ -70,30 +73,72 @@ export class TransactionsService {
   }
 
   async getBalance(userUuid: string) {
-    const totalIncome = await this.prismaService.transaction.aggregate({
-      where: {
-        user_uuid: userUuid,
-        type: 'income',
-      },
-      _sum: {
-        amount: true,
-      },
-    });
+    const [income, expense, paymentMethods] = await Promise.all([
+      this.getAllTransactionBalance(userUuid, 'income'),
+      this.getAllTransactionBalance(userUuid, 'expense'),
+      this.getPaymentMethods(userUuid),
+    ]);
 
-    const totalExpense = await this.prismaService.transaction.aggregate({
-      where: {
-        user_uuid: userUuid,
-        type: 'expense',
-      },
-      _sum: {
-        amount: true,
-      },
+    const totalPayMethods = paymentMethods.map((method) => {
+      const totalIncome = this.calculateTotalByType(
+        method.transactions,
+        'income',
+      );
+
+      const totalExpense = this.calculateTotalByType(
+        method.transactions,
+        'expense',
+      );
+
+      return {
+        name: method.name,
+        income: totalIncome,
+        expense: totalExpense,
+        total: totalIncome - totalExpense,
+      };
     });
 
     return {
-      income: totalIncome._sum.amount,
-      expense: totalExpense._sum.amount,
-      pocket: totalIncome._sum.amount - totalExpense._sum.amount,
+      income: income,
+      expense: expense,
+      payMethods: totalPayMethods,
+      total: income - expense,
     };
+  }
+
+  async getAllTransactionBalance(userUuid: string, type: string) {
+    const balance = await this.prismaService.transaction.aggregate({
+      where: {
+        user_uuid: userUuid,
+        type,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+    return balance._sum.amount || 0;
+  }
+
+  async getPaymentMethods(userUuid: string) {
+    return this.prismaService.paymentMethod.findMany({
+      where: {
+        user_uuid: userUuid,
+      },
+      include: {
+        transactions: true,
+      },
+    });
+  }
+
+  private calculateTotalByType(
+    transactions: Transaction[],
+    type: string,
+  ): number {
+    return transactions.reduce((acc, curr) => {
+      if (curr.type === type) {
+        return acc + curr.amount;
+      }
+      return acc;
+    }, 0);
   }
 }

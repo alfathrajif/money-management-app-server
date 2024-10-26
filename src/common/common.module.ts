@@ -16,6 +16,7 @@ const envSchema = z.object({
   JWT_EXPIRATION: z.string(),
   DATABASE_URL: z.string(),
   CLIENT_URL: z.string().default('http://localhost:3000'),
+  AUTH_COOKIE_NAME: z.string(),
 });
 
 @Global()

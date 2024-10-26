@@ -4,7 +4,7 @@ export class Category {
   uuid: string;
   user_uuid: string;
   name: string;
-  type: string;
+  type: string; // income | expense
   created_at: Date;
   updated_at: Date;
   transactions?: Transaction[];
@@ -13,5 +13,5 @@ export class Category {
 
 export class CreateCategory {
   name: string;
-  type: 'income' | 'expense';
+  type: string; // income | expense
 }

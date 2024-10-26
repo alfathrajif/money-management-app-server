@@ -5,22 +5,25 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const categories = [
-  { name: 'Salary', type: 'income' },
-  { name: 'Freelance Work', type: 'income' },
-  { name: 'Investment Returns', type: 'income' },
-  { name: 'Rental Income', type: 'income' },
-  { name: 'Business Revenue', type: 'income' },
-  { name: 'Food', type: 'expense' },
-  { name: 'Rent', type: 'expense' },
-  { name: 'Entertainment', type: 'expense' },
-  { name: 'Transportation', type: 'expense' },
-  { name: 'Subscriptions', type: 'expense' },
-  { name: 'Groceries', type: 'expense' },
+  { name: 'salary', type: 'income' },
+  { name: 'freelance work', type: 'income' },
+  { name: 'investment returns', type: 'income' },
+  { name: 'rental income', type: 'income' },
+  { name: 'business revenue', type: 'income' },
+  { name: 'food', type: 'expense' },
+  { name: 'rent', type: 'expense' },
+  { name: 'entertainment', type: 'expense' },
+  { name: 'transportation', type: 'expense' },
+  { name: 'subscriptions', type: 'expense' },
+  { name: 'groceries', type: 'expense' },
 ];
+
+const paymentMethods = [{ name: 'cash' }, { name: 'mobile banking' }];
 
 async function main() {
   await prisma.$transaction([
     prisma.transaction.deleteMany(),
+    prisma.paymentMethod.deleteMany(),
     prisma.category.deleteMany(),
     prisma.user.deleteMany(),
   ]);
@@ -33,25 +36,32 @@ async function main() {
     },
   });
 
-  const createdCategories = await Promise.all(
-    categories.map((category) =>
-      prisma.category.create({
-        data: {
-          user_uuid: user.uuid,
-          name: category.name,
-          type: category.type,
-        },
-      }),
-    ),
-  );
+  await prisma.category.createMany({
+    data: categories.map((category) => ({
+      user_uuid: user.uuid,
+      ...category,
+    })),
+  });
+
+  await prisma.paymentMethod.createMany({
+    data: paymentMethods.map((paymentMethod) => ({
+      user_uuid: user.uuid,
+      ...paymentMethod,
+    })),
+  });
+
+  const categoriesData = await prisma.category.findMany();
+  const paymentMethodsData = await prisma.paymentMethod.findMany();
 
   for (let i = 0; i < 20; i++) {
-    const category = faker.helpers.arrayElement(createdCategories);
+    const category = faker.helpers.arrayElement(categoriesData);
+    const paymentMethod = faker.helpers.arrayElement(paymentMethodsData);
 
     await prisma.transaction.create({
       data: {
         user_uuid: user.uuid,
         category_uuid: category.uuid,
+        payment_method_uuid: paymentMethod.uuid,
         type: category.type,
         amount: faker.number.int({
           min: 5000,
